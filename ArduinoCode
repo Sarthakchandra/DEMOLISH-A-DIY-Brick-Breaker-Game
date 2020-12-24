@@ -1,0 +1,65 @@
+#include <OneWire.h>
+#include <DallasTemperature.h>
+int flip=1;
+int temp_sensor=3;
+float temperature=0;
+volatile int NbTopsFan;
+int Calc;
+int flowsensor = 2;
+int valve=4;
+String value="open";
+
+OneWire oneWirePin(temp_sensor);
+DallasTemperature sensors(&oneWirePin);
+
+void rpm ()
+{
+  NbTopsFan++;
+}
+void setup()
+{
+pinMode(valve,OUTPUT);
+pinMode(flowsensor, INPUT);
+attachInterrupt(0, rpm, RISING);
+sensors.begin();
+Serial.begin(9600);
+}
+void loop()
+{
+  if(Serial.available()>0)
+  {
+    value=Serial.readString();
+    if(value=="open")
+    {
+      flip=1;
+    }
+    else if(value=="close")
+    {
+      flip=0;
+    }
+  }
+  if(flip==1)
+  {
+    digitalWrite(valve,HIGH);
+    sensors.requestTemperatures();
+    temperature = sensors.getTempCByIndex(0);
+    Serial.print(temperature);
+    Serial.print('/');
+    NbTopsFan = 0;
+    sei();
+    delay(1000);
+    cli();
+    Calc = (NbTopsFan * 60 / 7.5);
+    Serial.print (Calc, DEC);
+    Serial.print('\n') ;
+  }
+  else
+  {
+    digitalWrite(valve,LOW);
+    Serial.print('0');
+    Serial.print('/');
+    Serial.print('0');
+    Serial.print('\n');
+    delay(1000);
+  }
+}
